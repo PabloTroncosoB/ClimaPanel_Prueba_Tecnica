@@ -1,0 +1,24 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClimaPanel.Web", "src\ClimaPanel.Web\ClimaPanel.Web.csproj", "{08C7A78F-A5C2-4D68-9BAA-9A59AB8C2611}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClimaPanel.Tests", "tests\ClimaPanel.Tests\ClimaPanel.Tests.csproj", "{CC9CD1AB-76AB-48BB-95E0-677EEC1F373D}"
+EndProject
+Global
+    GlobalSection(SolutionConfigurationPlatforms) = preSolution
+        Debug|Any CPU = Debug|Any CPU
+        Release|Any CPU = Release|Any CPU
+    EndGlobalSection
+    GlobalSection(ProjectConfigurationPlatforms) = postSolution
+        {08C7A78F-A5C2-4D68-9BAA-9A59AB8C2611}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {08C7A78F-A5C2-4D68-9BAA-9A59AB8C2611}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {08C7A78F-A5C2-4D68-9BAA-9A59AB8C2611}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {08C7A78F-A5C2-4D68-9BAA-9A59AB8C2611}.Release|Any CPU.Build.0 = Release|Any CPU
+        {CC9CD1AB-76AB-48BB-95E0-677EEC1F373D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {CC9CD1AB-76AB-48BB-95E0-677EEC1F373D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {CC9CD1AB-76AB-48BB-95E0-677EEC1F373D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {CC9CD1AB-76AB-48BB-95E0-677EEC1F373D}.Release|Any CPU.Build.0 = Release|Any CPU
+    EndGlobalSection
+EndGlobal

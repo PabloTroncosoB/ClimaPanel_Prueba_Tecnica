@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+**/data/*.db
+**/data/*.db-shm
+**/data/*.db-wal
+.vs/
+.idea/
+.vscode/
+*.user
+*.suo
+TestResults/

@@ -1,0 +1,76 @@
+@model FavoriteDetailsViewModel
+@{
+    ViewData["Title"] = Model.City.Name;
+    var sourceClass = Model.Weather.Source switch
+    {
+        "LIVE" => "source-live",
+        "STALE" => "source-stale",
+        _ => "source-cache"
+    };
+}
+
+<a class="back-link" asp-action="Index">← Volver a mis ciudades</a>
+
+<section class="detail-header">
+    <div>
+        <span class="eyebrow">@Model.City.CountryCode · @Model.City.Timezone</span>
+        <h1>@Model.City.Name</h1>
+        <p>@Model.City.Country · @Model.City.Latitude.ToString("0.000"), @Model.City.Longitude.ToString("0.000")</p>
+    </div>
+    <span class="source-badge @sourceClass">Origen: @Model.Weather.Source</span>
+</section>
+
+<section class="current-weather panel">
+    <div class="temperature-block">
+        <span class="weather-symbol" aria-hidden="true">☀</span>
+        <div><strong>@Model.Weather.TemperatureC.ToString("0.0")°</strong><span>Temperatura actual</span></div>
+    </div>
+    <div class="metric-grid">
+        <article><span>Humedad</span><strong>@Model.Weather.HumidityPercent%</strong></article>
+        <article><span>Precipitación</span><strong>@Model.Weather.PrecipitationMm.ToString("0.0") mm</strong></article>
+        <article><span>Viento</span><strong>@Model.Weather.WindSpeedKmh.ToString("0.0") km/h</strong></article>
+        <article><span>Actualizado</span><strong>@Model.Weather.FetchedAtUtc.ToLocalTime().ToString("HH:mm")</strong></article>
+    </div>
+</section>
+
+<section class="section-heading compact-heading">
+    <div><span class="eyebrow">Próximos días</span><h2>Pronóstico</h2></div>
+</section>
+<div class="forecast-grid">
+    @foreach (var day in Model.Weather.Daily)
+    {
+        <article class="forecast-card">
+            <span>@day.Date</span>
+            <strong>@day.MaximumC.ToString("0")°</strong>
+            <small>Mín. @day.MinimumC.ToString("0")°</small>
+            <small>@day.PrecipitationMm.ToString("0.0") mm lluvia</small>
+        </article>
+    }
+</div>
+
+<section class="panel alerts-panel alerts-placeholder">
+    <div>
+        <span class="eyebrow">Funcionalidad nueva de extremo a extremo</span>
+        <h2>Alertas por umbral</h2>
+        <p>
+            Implemente aquí el flujo completo para crear, listar, activar,
+            desactivar, evaluar y eliminar alertas meteorológicas privadas.
+        </p>
+        <p class="hint">
+            Ejemplos: temperatura ≥ 30 °C, humedad ≤ 35 %, precipitación ≥ 5 mm
+            o viento ≥ 45 km/h.
+        </p>
+    </div>
+    <span class="pending-badge">Pendiente de desarrollo</span>
+</section>
+
+<div class="action-bar">
+    <form asp-action="Refrescar" asp-route-id="@Model.City.Id" method="post" data-lock-submit>
+        @Html.AntiForgeryToken()
+        <button class="button button-primary" type="submit">Actualizar ahora</button>
+    </form>
+    <form asp-action="Eliminar" asp-route-id="@Model.City.Id" method="post" data-lock-submit data-confirm="¿Eliminar esta ciudad de sus favoritos?">
+        @Html.AntiForgeryToken()
+        <button class="button button-danger" type="submit">Eliminar favorito</button>
+    </form>
+</div>

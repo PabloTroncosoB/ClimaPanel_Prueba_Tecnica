@@ -1,0 +1,86 @@
+@model HomeViewModel
+@{
+    ViewData["Title"] = "Buscar ciudades";
+}
+
+<section class="hero">
+    <div>
+        <span class="eyebrow">Evaluación técnica .NET</span>
+        <h1>Consulta el clima de cualquier ciudad</h1>
+        <p>Busca una ubicación, agrégala a tus favoritos y revisa su pronóstico de cinco días.</p>
+    </div>
+    <div class="hero-weather" aria-hidden="true">
+        <span>☀</span>
+        <strong>18°</strong>
+        <small>Demostración</small>
+    </div>
+</section>
+
+<section class="panel search-panel">
+    <form method="get" asp-action="Index" data-lock-submit>
+        <label for="q">Nombre de la ciudad</label>
+        <div class="search-row">
+            <input id="q" name="q" value="@Model.Query" minlength="2" maxlength="80"
+                   placeholder="Ej.: Santiago, Madrid o Tokio" autocomplete="off" required />
+            <button class="button button-primary" type="submit">Buscar</button>
+        </div>
+        <small>La búsqueda consulta la API pública de Open-Meteo.</small>
+    </form>
+</section>
+
+@if (Model.SearchPerformed)
+{
+    <section class="section-heading">
+        <div>
+            <span class="eyebrow">Resultados</span>
+            <h2>Ubicaciones encontradas</h2>
+        </div>
+        <span class="result-count">@Model.Results.Count resultado(s)</span>
+    </section>
+
+    @if (Model.Results.Count == 0)
+    {
+        <div class="empty-state">
+            <strong>No se encontraron ciudades.</strong>
+            <p>Prueba con otro nombre o agrega el país a la búsqueda.</p>
+        </div>
+    }
+    else
+    {
+        <div class="location-grid">
+            @foreach (var location in Model.Results)
+            {
+                <article class="location-card">
+                    <div class="location-icon" aria-hidden="true">⌖</div>
+                    <div class="location-body">
+                        <h3>@location.Name</h3>
+                        <p>@location.DisplayName</p>
+                        <dl>
+                            <div><dt>Coordenadas</dt><dd>@location.Latitude.ToString("0.000"), @location.Longitude.ToString("0.000")</dd></div>
+                            <div><dt>Zona horaria</dt><dd>@location.Timezone</dd></div>
+                        </dl>
+                    </div>
+                    <form asp-controller="Favoritos" asp-action="Crear" method="post" data-lock-submit>
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="LocationId" value="@location.Id" />
+                        <input type="hidden" name="Name" value="@location.Name" />
+                        <input type="hidden" name="Country" value="@location.Country" />
+                        <input type="hidden" name="CountryCode" value="@location.CountryCode" />
+                        <input type="hidden" name="Latitude" value="@location.Latitude.ToString(System.Globalization.CultureInfo.InvariantCulture)" />
+                        <input type="hidden" name="Longitude" value="@location.Longitude.ToString(System.Globalization.CultureInfo.InvariantCulture)" />
+                        <input type="hidden" name="Timezone" value="@location.Timezone" />
+                        <button class="button button-secondary button-full" type="submit">Agregar a mis ciudades</button>
+                    </form>
+                </article>
+            }
+        </div>
+    }
+}
+else
+{
+    <section class="feature-grid">
+        <article><span>01</span><h2>Busca</h2><p>Obtén ciudades reales mediante una API pública.</p></article>
+        <article><span>02</span><h2>Guarda</h2><p>Mantén una lista de ubicaciones por usuario.</p></article>
+        <article><span>03</span><h2>Consulta</h2><p>Visualiza condiciones actuales y pronóstico diario.</p></article>
+    </section>
+}

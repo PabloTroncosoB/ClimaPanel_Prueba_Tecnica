@@ -1,0 +1,71 @@
+@inject ICurrentUser CurrentUser
+@{
+    var current = CurrentUser.GetCurrent();
+    var returnUrl = Context.Request.Path + Context.Request.QueryString;
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] - ClimaPanel</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <header class="topbar">
+        <div class="shell topbar-inner">
+            <a class="brand" asp-controller="Home" asp-action="Index" aria-label="Ir al inicio">
+                <span class="brand-mark" aria-hidden="true">CP</span>
+                <span>
+                    <strong>ClimaPanel</strong>
+                    <small>Ciudades y pronósticos</small>
+                </span>
+            </a>
+            <nav class="main-nav" aria-label="Navegación principal">
+                <a asp-controller="Home" asp-action="Index">Buscar</a>
+                <a asp-controller="Favoritos" asp-action="Index">Mis ciudades</a>
+            </nav>
+            <form class="user-switch" asp-controller="Usuario" asp-action="Cambiar" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="returnUrl" value="@returnUrl" />
+                <label for="userId">Usuario de demostración</label>
+                <select id="userId" name="userId" onchange="this.form.submit()">
+                    @foreach (var user in DemoUsers.All)
+                    {
+                        if (user.Id == current.Id)
+                        {
+                            <option value="@user.Id" selected>@user.DisplayName</option>
+                        }
+                        else
+                        {
+                            <option value="@user.Id">@user.DisplayName</option>
+                        }
+                    }
+                </select>
+            </form>
+        </div>
+    </header>
+
+    <main class="shell page-content">
+        @if (TempData["Success"] is string success)
+        {
+            <div class="alert alert-success" role="status">@success</div>
+        }
+        @if (TempData["Error"] is string error)
+        {
+            <div class="alert alert-error" role="alert">@error</div>
+        }
+        @RenderBody()
+    </main>
+
+    <footer class="footer">
+        <div class="shell footer-inner">
+            <span>ClimaPanel · ejercicio técnico</span>
+            <span>Datos meteorológicos: Open-Meteo</span>
+        </div>
+    </footer>
+
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,17 @@
+@model ErrorViewModel
+@{
+    ViewData["Title"] = "Error";
+}
+
+<section class="error-page">
+    <span class="error-code">500</span>
+    <h1>No fue posible completar la operación</h1>
+    <p>Se produjo un error durante el procesamiento de la solicitud.</p>
+    <a class="button button-primary" asp-controller="Home" asp-action="Index">Volver al inicio</a>
+
+    <details class="technical-error" open>
+        <summary>Detalle técnico</summary>
+        <p>Identificador: @Model.RequestId</p>
+        <pre>@Model.TechnicalDetail</pre>
+    </details>
+</section>

@@ -1,0 +1,63 @@
+@model FavoriteListViewModel
+@{
+    ViewData["Title"] = "Mis ciudades";
+}
+
+<section class="section-heading page-heading">
+    <div>
+        <span class="eyebrow">Panel personal</span>
+        <h1>Mis ciudades</h1>
+        <p>Administra las ubicaciones guardadas por el usuario seleccionado.</p>
+    </div>
+    <a class="button button-primary" asp-controller="Home" asp-action="Index">Agregar ciudad</a>
+</section>
+
+<section class="panel filter-panel">
+    <form method="get" asp-action="Index">
+        <label for="search">Filtrar favoritos</label>
+        <div class="search-row">
+            <input id="search" name="search" value="@Model.Search" placeholder="Ciudad o país" />
+            <button class="button button-secondary" type="submit">Filtrar</button>
+            @if (!string.IsNullOrWhiteSpace(Model.Search))
+            {
+                <a class="button button-ghost" asp-action="Index">Limpiar</a>
+            }
+        </div>
+    </form>
+</section>
+
+@if (Model.Items.Count == 0)
+{
+    <div class="empty-state">
+        <strong>No hay ciudades para mostrar.</strong>
+        <p>Realiza una búsqueda y agrega tu primera ubicación.</p>
+    </div>
+}
+else
+{
+    <div class="favorite-list">
+        @foreach (var item in Model.Items)
+        {
+            <article class="favorite-row">
+                <div class="country-badge">@item.CountryCode</div>
+                <div class="favorite-main">
+                    <h2>@item.Name</h2>
+                    <p>@item.Country · @item.Timezone</p>
+                </div>
+                <div class="favorite-meta">
+                    <span>Agregada</span>
+                    <strong>@item.CreatedAtUtc.ToLocalTime().ToString("dd-MM-yyyy")</strong>
+                </div>
+                <a class="button button-secondary" asp-action="Detalle" asp-route-id="@item.Id">Ver pronóstico</a>
+            </article>
+        }
+    </div>
+
+    <nav class="pagination" aria-label="Paginación">
+        <a class="@(Model.Page <= 1 ? "disabled" : null)"
+           asp-action="Index" asp-route-page="@(Model.Page - 1)" asp-route-pageSize="@Model.PageSize" asp-route-search="@Model.Search">Anterior</a>
+        <span>Página @Model.Page de @Model.TotalPages · @Model.Total registro(s)</span>
+        <a class="@(Model.Page >= Model.TotalPages ? "disabled" : null)"
+           asp-action="Index" asp-route-page="@(Model.Page + 1)" asp-route-pageSize="@Model.PageSize" asp-route-search="@Model.Search">Siguiente</a>
+    </nav>
+}
