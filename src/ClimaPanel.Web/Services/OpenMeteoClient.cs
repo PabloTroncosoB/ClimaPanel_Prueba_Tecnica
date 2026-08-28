@@ -19,7 +19,9 @@ public sealed class OpenMeteoClient : IWeatherClient
         string query,
         CancellationToken cancellationToken)
     {
-        var url = "/v1/search?name=" + Uri.EscapeDataString(query)
+        var baseUrl = _configuration["OpenMeteo:GeocodingBaseUrl"]
+            ?? "https://geocoding-api.open-meteo.com";
+        var url = baseUrl + "/v1/search?name=" + Uri.EscapeDataString(query)
             + "&count=8&language=es&format=json";
 
         var response = await _httpClient.GetAsync(url, cancellationToken);
@@ -48,7 +50,9 @@ public sealed class OpenMeteoClient : IWeatherClient
         string timezone,
         CancellationToken cancellationToken)
     {
-        var url = "/v1/forecast"
+        var baseUrl = _configuration["OpenMeteo:ForecastBaseUrl"]
+            ?? "https://api.open-meteo.com";
+        var url = baseUrl + "/v1/forecast"
             + $"?latitude={latitude.ToString(System.Globalization.CultureInfo.InvariantCulture)}"
             + $"&longitude={longitude.ToString(System.Globalization.CultureInfo.InvariantCulture)}"
             + "&current=temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m"
