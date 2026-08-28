@@ -9,6 +9,11 @@ Lea primero `GUIA_POSTULANTE.pdf`. Ese documento contiene el alcance, las
 reglas, los niveles evaluados, la funcionalidad nueva, la pauta y el proceso de
 entrega.
 
+## Documentación del proyecto
+
+- `DECISIONS.md` — Decisiones técnicas tomadas durante la implementación.
+- `AI_USAGE.md` — Declaración honesta del uso de herramientas de IA.
+
 ## Requisitos
 
 - SDK de .NET 8.
