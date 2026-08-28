@@ -9,6 +9,9 @@ public static class DbInitializer
     {
         await using var scope = services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        
+        // Recreate database to include new WeatherAlerts table
+        await db.Database.EnsureDeletedAsync();
         await db.Database.EnsureCreatedAsync();
 
         if (await db.FavoriteCities.AnyAsync())
