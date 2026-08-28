@@ -59,11 +59,9 @@ public sealed class FavoriteService
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, 50);
 
-        var allRows = await _db.FavoriteCities
+        var query = _db.FavoriteCities
             .AsNoTracking()
-            .ToListAsync(cancellationToken);
-
-        IEnumerable<FavoriteCity> query = allRows.Where(x => x.UserId == userId);
+            .Where(x => x.UserId == userId);
 
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -72,11 +70,12 @@ public sealed class FavoriteService
                 x.Country.Contains(search, StringComparison.OrdinalIgnoreCase));
         }
 
-        query = query.OrderBy(x => x.Name);
-        var total = query.Count();
+        var total = await query.CountAsync(cancellationToken);
         var items = query
+            .OrderBy(x => x.Name)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
+            .AsEnumerable()
             .Select(ToListItem)
             .ToArray();
 
@@ -98,7 +97,7 @@ public sealed class FavoriteService
     {
         return await _db.FavoriteCities
             .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken)
+            .FirstOrDefaultAsync(x => x.Id == id && x.UserId == userId, cancellationToken)
             ?? throw NotFound();
     }
 
@@ -108,7 +107,7 @@ public sealed class FavoriteService
         CancellationToken cancellationToken)
     {
         var entity = await _db.FavoriteCities
-            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken)
+            .FirstOrDefaultAsync(x => x.Id == id && x.UserId == userId, cancellationToken)
             ?? throw NotFound();
 
         _db.FavoriteCities.Remove(entity);
@@ -122,18 +121,19 @@ public sealed class FavoriteService
     {
         var city = await _db.FavoriteCities
             .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken)
+            .FirstOrDefaultAsync(x => x.Id == id && x.UserId == userId, cancellationToken)
             ?? throw NotFound();
 
         return await _weatherCache.GetAsync(city, false, cancellationToken);
     }
 
-    public Task<WeatherCard> RefreshAsync(
+    public async Task<WeatherCard> RefreshAsync(
         string userId,
         Guid id,
         CancellationToken cancellationToken)
     {
-        throw new NotImplementedException("La actualización manual todavía no está implementada.");
+        var city = await GetAsync(userId, id, cancellationToken);
+        return await _weatherCache.GetAsync(city, forceRefresh: true, cancellationToken);
     }
 
     private static FavoriteListItem ToListItem(FavoriteCity entity) => new(

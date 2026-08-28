@@ -67,10 +67,19 @@ public sealed class FavoritosController : Controller
         var user = _currentUser.GetCurrent();
         var city = await _service.GetAsync(user.Id, id, cancellationToken);
         var weather = await _service.GetWeatherAsync(user.Id, id, cancellationToken);
+        
+        // Evaluar alertas contra el clima actual
+        var alertService = HttpContext.RequestServices.GetRequiredService<WeatherAlertService>();
+        await alertService.EvaluateAsync(user.Id, id, weather, cancellationToken);
+        
+        // Obtener alertas para mostrar en la vista
+        var alerts = await alertService.ListAsync(user.Id, id, cancellationToken);
+        
         return View(new FavoriteDetailsViewModel
         {
             City = city,
-            Weather = weather
+            Weather = weather,
+            Alerts = alerts
         });
     }
 
@@ -104,5 +113,72 @@ public sealed class FavoritosController : Controller
         }
 
         return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CrearAlerta(
+        Guid id,
+        CreateWeatherAlertInput input,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var user = _currentUser.GetCurrent();
+            var alertService = HttpContext.RequestServices.GetRequiredService<WeatherAlertService>();
+            input.FavoriteId = id;
+            await alertService.CreateAsync(user.Id, input, cancellationToken);
+            TempData["Success"] = "Alerta creada exitosamente.";
+            return RedirectToAction(nameof(Detalle), new { id });
+        }
+        catch (UserMessageException ex)
+        {
+            TempData["Error"] = ex.Message;
+            return RedirectToAction(nameof(Detalle), new { id });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ToggleAlerta(
+        Guid id,
+        Guid alertId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var user = _currentUser.GetCurrent();
+            var alertService = HttpContext.RequestServices.GetRequiredService<WeatherAlertService>();
+            await alertService.ToggleAsync(user.Id, id, alertId, cancellationToken);
+            TempData["Success"] = "Estado de alerta actualizado.";
+            return RedirectToAction(nameof(Detalle), new { id });
+        }
+        catch (UserMessageException ex)
+        {
+            TempData["Error"] = ex.Message;
+            return RedirectToAction(nameof(Detalle), new { id });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> EliminarAlerta(
+        Guid id,
+        Guid alertId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var user = _currentUser.GetCurrent();
+            var alertService = HttpContext.RequestServices.GetRequiredService<WeatherAlertService>();
+            await alertService.DeleteAsync(user.Id, id, alertId, cancellationToken);
+            TempData["Success"] = "Alerta eliminada.";
+            return RedirectToAction(nameof(Detalle), new { id });
+        }
+        catch (UserMessageException ex)
+        {
+            TempData["Error"] = ex.Message;
+            return RedirectToAction(nameof(Detalle), new { id });
+        }
     }
 }

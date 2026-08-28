@@ -6,29 +6,25 @@ namespace ClimaPanel.Web.Services;
 
 public sealed class OpenMeteoClient : IWeatherClient
 {
+    private readonly HttpClient _httpClient;
     private readonly IConfiguration _configuration;
 
-    public OpenMeteoClient(IConfiguration configuration)
+    public OpenMeteoClient(HttpClient httpClient, IConfiguration configuration)
     {
+        _httpClient = httpClient;
         _configuration = configuration;
     }
 
-    public Task<IReadOnlyList<LocationOption>> SearchAsync(
+    public async Task<IReadOnlyList<LocationOption>> SearchAsync(
         string query,
         CancellationToken cancellationToken)
     {
-        using var client = new HttpClient
-        {
-            BaseAddress = new Uri(_configuration["OpenMeteo:GeocodingBaseUrl"]
-                ?? "https://geocoding-api.open-meteo.com")
-        };
-
         var url = "/v1/search?name=" + Uri.EscapeDataString(query)
             + "&count=8&language=es&format=json";
 
-        var response = client.GetAsync(url).Result;
+        var response = await _httpClient.GetAsync(url, cancellationToken);
         response.EnsureSuccessStatusCode();
-        var payload = response.Content.ReadFromJsonAsync<GeocodingResponse>().Result;
+        var payload = await response.Content.ReadFromJsonAsync<GeocodingResponse>(cancellationToken: cancellationToken);
 
         IReadOnlyList<LocationOption> results = payload?.Results?
             .Select(x => new LocationOption(
@@ -43,21 +39,15 @@ public sealed class OpenMeteoClient : IWeatherClient
             .ToArray()
             ?? [];
 
-        return Task.FromResult(results);
+        return results;
     }
 
-    public Task<WeatherReading> GetForecastAsync(
+    public async Task<WeatherReading> GetForecastAsync(
         double latitude,
         double longitude,
         string timezone,
         CancellationToken cancellationToken)
     {
-        using var client = new HttpClient
-        {
-            BaseAddress = new Uri(_configuration["OpenMeteo:ForecastBaseUrl"]
-                ?? "https://api.open-meteo.com")
-        };
-
         var url = "/v1/forecast"
             + $"?latitude={latitude.ToString(System.Globalization.CultureInfo.InvariantCulture)}"
             + $"&longitude={longitude.ToString(System.Globalization.CultureInfo.InvariantCulture)}"
@@ -66,9 +56,9 @@ public sealed class OpenMeteoClient : IWeatherClient
             + "&forecast_days=5"
             + "&timezone=" + Uri.EscapeDataString(timezone);
 
-        var response = client.GetAsync(url).Result;
+        var response = await _httpClient.GetAsync(url, cancellationToken);
         response.EnsureSuccessStatusCode();
-        var payload = response.Content.ReadFromJsonAsync<ForecastResponse>().Result
+        var payload = await response.Content.ReadFromJsonAsync<ForecastResponse>(cancellationToken: cancellationToken)
             ?? throw new InvalidOperationException("El proveedor no entregó información meteorológica.");
 
         var current = payload.Current
@@ -95,13 +85,13 @@ public sealed class OpenMeteoClient : IWeatherClient
             }
         }
 
-        return Task.FromResult(new WeatherReading(
+        return new WeatherReading(
             DateTime.UtcNow,
             current.Temperature ?? 0,
             current.Humidity ?? 0,
             current.Precipitation ?? 0,
             current.WindSpeed ?? 0,
-            daily));
+            daily);
     }
 
     private sealed class GeocodingResponse

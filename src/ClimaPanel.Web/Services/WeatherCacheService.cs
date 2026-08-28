@@ -5,7 +5,6 @@ namespace ClimaPanel.Web.Services;
 
 public sealed class WeatherCacheService
 {
-    private const string CacheKey = "forecast";
     private readonly IMemoryCache _cache;
     private readonly IWeatherClient _weatherClient;
     private readonly IConfiguration _configuration;
@@ -20,13 +19,17 @@ public sealed class WeatherCacheService
         _configuration = configuration;
     }
 
+    private string GetCacheKey(FavoriteCity city) => $"forecast_{city.LocationId}";
+
     public async Task<WeatherCard> GetAsync(
         FavoriteCity city,
         bool forceRefresh,
         CancellationToken cancellationToken)
     {
+        var key = GetCacheKey(city);
+
         if (!forceRefresh &&
-            _cache.TryGetValue(CacheKey, out WeatherCard? cached) &&
+            _cache.TryGetValue(key, out WeatherCard? cached) &&
             cached is not null)
         {
             return cached with { Source = "CACHE" };
@@ -36,7 +39,7 @@ public sealed class WeatherCacheService
             city.Latitude,
             city.Longitude,
             city.Timezone,
-            CancellationToken.None);
+            cancellationToken);
 
         var response = new WeatherCard(
             "LIVE",
@@ -48,7 +51,7 @@ public sealed class WeatherCacheService
             reading.Daily);
 
         var cacheSeconds = _configuration.GetValue("OpenMeteo:CacheSeconds", 90);
-        _cache.Set(CacheKey, response, TimeSpan.FromSeconds(cacheSeconds));
+        _cache.Set(key, response, TimeSpan.FromSeconds(cacheSeconds));
         return response;
     }
 }

@@ -1,3 +1,4 @@
+@using ClimaPanel.Web.Models
 @model FavoriteDetailsViewModel
 @{
     ViewData["Title"] = Model.City.Name;
@@ -7,6 +8,7 @@
         "STALE" => "source-stale",
         _ => "source-cache"
     };
+    var triggeredAlerts = Model.Alerts.Where(a => a.IsTriggered).Count();
 }
 
 <a class="back-link" asp-action="Index">← Volver a mis ciudades</a>
@@ -48,20 +50,144 @@
     }
 </div>
 
-<section class="panel alerts-panel alerts-placeholder">
-    <div>
-        <span class="eyebrow">Funcionalidad nueva de extremo a extremo</span>
-        <h2>Alertas por umbral</h2>
-        <p>
-            Implemente aquí el flujo completo para crear, listar, activar,
-            desactivar, evaluar y eliminar alertas meteorológicas privadas.
-        </p>
-        <p class="hint">
-            Ejemplos: temperatura ≥ 30 °C, humedad ≤ 35 %, precipitación ≥ 5 mm
-            o viento ≥ 45 km/h.
-        </p>
+<section class="panel alerts-panel">
+    <div class="alerts-header">
+        <div>
+            <span class="eyebrow">Alertas personalizadas</span>
+            <h2>Alertas por umbral</h2>
+            @if (triggeredAlerts > 0)
+            {
+                <span class="alert-badge alert-triggered">⚠️ @triggeredAlerts alerta@(triggeredAlerts == 1 ? "" : "s") activa@(triggeredAlerts == 1 ? "" : "s")</span>
+            }
+        </div>
     </div>
-    <span class="pending-badge">Pendiente de desarrollo</span>
+
+    @if (Model.Alerts.Count > 0)
+    {
+        <div class="alerts-list">
+            <table class="alerts-table">
+                <thead>
+                    <tr>
+                        <th>Métrica</th>
+                        <th>Condición</th>
+                        <th>Estado</th>
+                        <th>Última evaluación</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var alert in Model.Alerts.OrderByDescending(a => a.IsTriggered).ThenByDescending(a => a.CreatedAtUtc))
+                    {
+                        var metricLabel = alert.Metric switch
+                        {
+                            WeatherMetric.TemperatureC => "Temperatura",
+                            WeatherMetric.HumidityPercent => "Humedad",
+                            WeatherMetric.PrecipitationMm => "Precipitación",
+                            WeatherMetric.WindSpeedKmh => "Viento",
+                            _ => "Desconocida"
+                        };
+
+                        var operatorLabel = alert.Operator switch
+                        {
+                            ThresholdOperator.GreaterThanOrEqual => "≥",
+                            ThresholdOperator.LessThanOrEqual => "≤",
+                            _ => "?"
+                        };
+
+                        var unit = alert.Metric switch
+                        {
+                            WeatherMetric.TemperatureC => "°C",
+                            WeatherMetric.HumidityPercent => "%",
+                            WeatherMetric.PrecipitationMm => "mm",
+                            WeatherMetric.WindSpeedKmh => "km/h",
+                            _ => ""
+                        };
+
+                        var rowClass = alert.IsTriggered ? "alert-row alert-triggered-row" : "";
+                        var statusClass = alert.IsTriggered ? "status-triggered" : (alert.IsEnabled ? "status-enabled" : "status-disabled");
+                        var statusText = alert.IsTriggered ? "⚠️ Disparada" : (alert.IsEnabled ? "✓ Activa" : "○ Inactiva");
+
+                        <tr class="@rowClass">
+                            <td><strong>@metricLabel</strong></td>
+                            <td>@operatorLabel @alert.Threshold@unit</td>
+                            <td><span class="status-badge @statusClass">@statusText</span></td>
+                            <td>
+                                @if (alert.LastEvaluatedAtUtc.HasValue)
+                                {
+                                    <small>@alert.LastEvaluatedAtUtc.Value.ToLocalTime().ToString("HH:mm")</small>
+                                }
+                                else
+                                {
+                                    <small class="text-muted">No evaluada</small>
+                                }
+                            </td>
+                            <td class="actions-cell">
+                                <form asp-action="ToggleAlerta" asp-route-id="@Model.City.Id" asp-route-alertId="@alert.Id" method="post" style="display: inline;">
+                                    @Html.AntiForgeryToken()
+                                    <button class="button button-small @(alert.IsEnabled ? "button-secondary" : "button-primary")" type="submit" title="@(alert.IsEnabled ? "Desactivar" : "Activar")">
+                                        @(alert.IsEnabled ? "Desactivar" : "Activar")
+                                    </button>
+                                </form>
+                                <form asp-action="EliminarAlerta" asp-route-id="@Model.City.Id" asp-route-alertId="@alert.Id" method="post" style="display: inline;" data-confirm="¿Eliminar esta alerta?">
+                                    @Html.AntiForgeryToken()
+                                    <button class="button button-small button-danger" type="submit" title="Eliminar">✕</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <p class="text-muted">No hay alertas configuradas aún.</p>
+    }
+
+    @if (Model.Alerts.Count(a => a.IsEnabled) < 5)
+    {
+        <div class="create-alert-form">
+            <h3>Crear nueva alerta</h3>
+            <form asp-action="CrearAlerta" asp-route-id="@Model.City.Id" method="post">
+                @Html.AntiForgeryToken()
+                
+                <div class="form-group">
+                    <label for="metric">Métrica:</label>
+                    <select id="metric" name="Metric" class="form-control" required>
+                        <option value="">Seleccionar métrica...</option>
+                        <option value="@((int)WeatherMetric.TemperatureC)">Temperatura (°C)</option>
+                        <option value="@((int)WeatherMetric.HumidityPercent)">Humedad (%)</option>
+                        <option value="@((int)WeatherMetric.PrecipitationMm)">Precipitación (mm)</option>
+                        <option value="@((int)WeatherMetric.WindSpeedKmh)">Viento (km/h)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="operator">Condición:</label>
+                    <select id="operator" name="Operator" class="form-control" required>
+                        <option value="">Seleccionar operador...</option>
+                        <option value="@((int)ThresholdOperator.GreaterThanOrEqual)">Mayor o igual (≥)</option>
+                        <option value="@((int)ThresholdOperator.LessThanOrEqual)">Menor o igual (≤)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="threshold">Valor:</label>
+                    <input type="number" id="threshold" name="Threshold" class="form-control" step="0.1" required 
+                           placeholder="Ingresa el valor umbral" />
+                    <small class="text-muted">
+                        Temperatura: -80 a 80 | Humedad: 0 a 100 | Precipitación: 0 a 500 | Viento: 0 a 300
+                    </small>
+                </div>
+
+                <button type="submit" class="button button-primary">Crear alerta</button>
+            </form>
+        </div>
+    }
+    else
+    {
+        <p class="text-warning">Has alcanzado el límite de 5 alertas activas por ciudad.</p>
+    }
 </section>
 
 <div class="action-bar">
@@ -74,3 +200,142 @@
         <button class="button button-danger" type="submit">Eliminar favorito</button>
     </form>
 </div>
+
+<style>
+.alerts-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.alert-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.alert-badge.alert-triggered {
+    background-color: #fee;
+    color: #c33;
+    border: 1px solid #fcc;
+}
+
+.alerts-list {
+    margin-bottom: 2rem;
+}
+
+.alerts-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.alerts-table thead {
+    background-color: #f5f5f5;
+    border-bottom: 2px solid #ddd;
+}
+
+.alerts-table th {
+    padding: 0.75rem;
+    text-align: left;
+    font-weight: 600;
+}
+
+.alerts-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #eee;
+}
+
+.alert-row.alert-triggered-row {
+    background-color: #fef5f5;
+}
+
+.alert-row.alert-triggered-row td {
+    border-bottom: 1px solid #fdd;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.status-badge.status-enabled {
+    background-color: #efe;
+    color: #2a2;
+}
+
+.status-badge.status-disabled {
+    background-color: #f0f0f0;
+    color: #666;
+}
+
+.status-badge.status-triggered {
+    background-color: #fee;
+    color: #c33;
+    font-weight: 600;
+}
+
+.actions-cell {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.button-small {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+}
+
+.create-alert-form {
+    background-color: #f9f9f9;
+    padding: 1.5rem;
+    border-radius: 4px;
+    margin-top: 1.5rem;
+}
+
+.create-alert-form h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.form-group select,
+.form-group input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    font-size: 0.9rem;
+}
+
+.form-group small {
+    display: block;
+    margin-top: 0.25rem;
+}
+
+.text-warning {
+    color: #b8860b;
+    padding: 0.75rem;
+    background-color: #fffaf0;
+    border-left: 3px solid #b8860b;
+    margin: 1rem 0;
+}
+
+.text-muted {
+    color: #999;
+}
+</style>
