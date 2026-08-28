@@ -65,9 +65,10 @@ public sealed class FavoriteService
 
         if (!string.IsNullOrWhiteSpace(search))
         {
+            var searchPattern = $"%{search}%";
             query = query.Where(x =>
-                x.Name.Contains(search, StringComparison.OrdinalIgnoreCase) ||
-                x.Country.Contains(search, StringComparison.OrdinalIgnoreCase));
+                EF.Functions.Like(x.Name, searchPattern) ||
+                EF.Functions.Like(x.Country, searchPattern));
         }
 
         var total = await query.CountAsync(cancellationToken);
